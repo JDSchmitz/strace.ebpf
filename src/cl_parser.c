@@ -230,3 +230,94 @@ cl_parser(struct cl_options *const clo,
 
 	return optind;
 }
+
+/*
+ * cl_parser_convert -- command-line options parser
+ */
+int
+cl_parser_convert(struct cl_options *const clo,
+			const int argc, char *const argv[])
+{
+	while (1) {
+		int c;
+		int option_index = 0;
+
+		static struct option long_options[] = {
+			{"timestamp",		no_argument,	   0, 't'},
+			{"failed",		no_argument,	   0, 'X'},
+			{"help",		no_argument,	   0, 'h'},
+			{"debug",		no_argument,	   0, 'd'},
+			{"list",		no_argument,	   0, 'L'},
+			{"ll-list",		no_argument,	   0, 'R'},
+			{"builtin-list",	no_argument,	   0, 'B'},
+			{"pid",			required_argument, 0, 'p'},
+			{"format",		required_argument, 0, 'l'},
+			{"string-args",		required_argument, 0, 's'},
+			{"expr",		required_argument, 0, 'e'},
+			{"output",		required_argument, 0, 'o'},
+			{"ebpf-src-dir", 	required_argument, 0, 'N'},
+			{"hex-separator", 	required_argument, 0, 'K'},
+			{"full-follow-fork",	optional_argument, 0, 'f'},
+			{0, 0, 0, 0}
+		};
+
+		c = getopt_long(argc, argv, "+tXhdLRBp:l:s:e:o:N:K:f::",
+				long_options, &option_index);
+
+		if (c == -1)
+			break;
+
+		switch (c) {
+			int res;
+
+		case 'h':
+			fprint_help(stdout);
+			exit(EXIT_SUCCESS);
+
+		case 'd':
+			clo->debug = true;
+			break;
+
+		case 'p':
+			check_optarg(optarg);
+			clo->pid = atoi(optarg);
+			if (clo->pid < 1) {
+				ERROR("wrong value for pid option is"
+					" provided: '%s' => '%d'",
+					optarg, clo->pid);
+				exit(EXIT_FAILURE);
+			}
+			break;
+
+		case 'o':
+			check_optarg(optarg);
+			clo->out_fn = optarg;
+			break;
+
+		case 'K':
+			check_optarg(optarg);
+			clo->out_lf_fld_sep_ch = *optarg;
+			break;
+
+		case 'N':
+			check_optarg(optarg);
+			clo->ebpf_src_dir = optarg;
+			break;
+		case ':':
+			ERROR("missing mandatory option's argument");
+			fprint_help(stderr);
+			exit(EXIT_FAILURE);
+
+		default:
+			ERROR("unknown option: '-%c'", c);
+		case '?':
+			fprint_help(stderr);
+			exit(EXIT_FAILURE);
+		}
+	}
+
+	if (optind < argc)
+		clo->command = true;
+
+	return optind;
+}
