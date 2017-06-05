@@ -71,7 +71,9 @@ kprobe__SYSCALL_NAME_filled_for_replace(struct pt_regs *ctx)
 
 	memset(dest, 0, BUF_SIZE);
 
-	bpf_probe_read(dest, length, (void *)u.ev.args[STR1]);
+	if (bpf_probe_read(dest, length, (void *)u.ev.args[STR1])) {
+		memcpy(dest, str_error, STR_ERR_LEN);
+	}
 
 	events.perf_submit(ctx, &u.ev, _pad_size);
 
